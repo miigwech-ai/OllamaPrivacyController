@@ -4,6 +4,8 @@
 
 # OllamaPrivacyController
 
+**v0.1 runs from source using Python; a packaged Windows application is not included.**
+
 A local-first privacy dashboard for [Ollama](https://ollama.com) on Windows. It answers three questions about your local installation:
 
 1. **What interaction data exists** on this machine — and where?

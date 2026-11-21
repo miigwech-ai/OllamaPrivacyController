@@ -1,0 +1,13 @@
+{
+  "name": "OllamaPrivacyController",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first privacy dashboard for Ollama on Windows",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests-js/*.test.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}

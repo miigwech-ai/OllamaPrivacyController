@@ -1,0 +1,217 @@
+1. CLI prompt history — actual interaction content
+Platform / execution context	Location to inspect	What it contains
+Windows user running the CLI	%USERPROFILE%\.ollama\history	Persisted interactive CLI input.
+macOS user running the CLI	~/.ollama/history	Persisted interactive CLI input.
+Linux user running the CLI	~/.ollama/history	Persisted interactive CLI input.
+CLI run as another user, root, or inside a container	That executing user’s .ollama/history, such as /root/.ollama/history	A separate history belonging to that account or container.
+This history records prompts entered through interactive ollama run; it is not a complete transcript of model replies and does not automatically capture prompts sent by unrelated API clients. A forensic study recovered CLI prompts from this file, while Ollama’s CLI source confirms history controls are part of the interactive client.
+
+Inspect every account that ran the CLI, not just the account that runs the Ollama server. The history setting belongs to the client process; setting it only on a Linux server service does not disable history in a separately running CLI.
+
+2. Ollama desktop app database — conversations and detailed metadata
+These are separate from CLI history:
+
+Platform	Confirmed desktop database location
+Windows	%LOCALAPPDATA%\Ollama\db.sqlite
+macOS	~/Library/Application Support/Ollama/db.sqlite
+Ollama’s source explicitly identifies these as the production desktop database paths. That same path-selection code does not specify an equivalent Linux desktop database.
+
+The inspected desktop database schema and message-loading code include:
+
+Chat identifiers, titles, and creation timestamps.
+
+Message identifiers, roles, content, creation and update timestamps.
+
+Model names.
+
+Model-generated “thinking” text and thinking start/end times.
+
+Streaming state.
+
+Attachments, including filenames and stored binary data.
+
+Tool calls and tool results.
+
+A browser_state field on chats.
+
+Application settings, including version-dependent inference settings.
+
+These fields are version-dependent; this is not a promise that your installed release uses exactly the same schema.
+
+Database companion files and deleted content
+Inspect the whole directory, not only db.sqlite, including any present:
+
+text
+db.sqlite
+db.sqlite-wal
+db.sqlite-shm
+db.sqlite-journal
+The reviewed Ollama database implementation enables SQLite WAL mode, making the write-ahead log relevant to an inspection. Companion files are conditional: they need not all exist at once, and the -journal name is a rollback-journal candidate rather than a claim that the inspected implementation normally uses it.
+
+Also account for deleted records inside the database. A public Ollama issue reports that deleted desktop chats remained recoverable in SQLite free pages. That is a reported behaviour, not proof about your particular release, but deleting a chat in the UI should not be treated as proof its bytes disappeared.
+
+3. Logs — activity metadata and potentially sensitive diagnostics
+Installation / platform	Locations or log destinations
+Windows desktop installation	%LOCALAPPDATA%\Ollama\server.log and rotated server-#.log files; inspect the entire directory for other application logs.
+macOS	~/.ollama/logs/server.log; inspect the entire log directory for rotations and other logs.
+Linux systemd installation	The system journal: journalctl -u ollama.
+Docker	Container stdout/stderr, accessible through docker logs <container-name>.
+Manually started ollama serve	The launching terminal’s stdout/stderr, plus any redirection or logging configured by the launcher.
+These destinations are documented by Ollama. Debug mode increases diagnostic output.
+
+Treat logs as potentially sensitive rather than assuming they contain either “everything” or “no content.” Their contents depend on version, debug settings, errors, and wrappers. Ollama’s documentation does not establish that normal server logs are a complete prompt-and-answer archive.
+
+For an exhaustive inspection, follow the logging destination through to its actual storage: system-journal retention, container logging driver, service wrapper, redirected file, or external log collector.
+
+4. Saved sessions and custom models — an easily missed content store
+Inspect the configured model directory:
+
+Platform	Default model directory
+Windows	%USERPROFILE%\.ollama\models
+macOS	~/.ollama/models
+Linux official service installation	/usr/share/ollama/.ollama/models
+Customized installation	The directory configured through OLLAMA_MODELS.
+These defaults and the environment-variable override are documented by Ollama.
+
+Inside it, inspect:
+
+text
+models/manifests/
+models/blobs/
+Manifests identify models and their component hashes; blobs hold model layers. Those artifacts establish model presence and composition, not necessarily that a particular conversation occurred.
+
+However, the CLI’s /save <model> command is a significant exception: its implementation creates a model using session messages, system instructions, and parameters. Therefore saved sessions/custom models can preserve conversation content in model artifacts, not just in history or the desktop database.
+
+Also include original Modelfiles, scripts, or other source files used to construct those custom models wherever you stored them.
+
+5. Temporary prompt files and editor artifacts
+Current CLI source supports composing prompts in an external editor and creates files matching:
+
+text
+ollama-prompt-*.txt
+It uses the operating system’s temporary directory and attempts to remove the temporary file afterward. A crash or interrupted cleanup is a reason to inspect that directory.
+
+Inspection candidates include:
+
+Windows: the directory represented by %TEMP%.
+
+Linux/macOS: the actual temporary directory used by the process.
+
+The external editor’s backup, swap, autosave, recovery, and recent-file artifacts, if that feature was used.
+
+The last category is conditional and editor-specific; it is not an Ollama-defined directory.
+
+Do not confuse these prompt files with temporary runtime executables. Ollama also documents Windows %TEMP%\ollama* runtime directories and Linux’s OLLAMA_TMPDIR override; their existence alone does not establish that they contain conversations.
+
+6. Configuration and identity metadata
+Inspect the relevant account’s entire .ollama directory, including:
+
+text
+server.json
+id_ed25519.pub
+Ollama documents server.json as a cloud-feature configuration location and documents public keys used to associate an instance with model pushes, private-model pulls, and cloud inference. Those are configuration/identity artifacts, not chat transcripts.
+
+Also review:
+
+User and system OLLAMA_* environment variables.
+
+Linux service configuration and drop-ins.
+
+Launch scripts, scheduled tasks, and service wrappers.
+
+Container configuration and environment settings.
+
+These can reveal alternate model paths, server endpoints, logging settings, and whether inference was actually local. Ollama documents environment-based configuration across the operating systems.
+
+7. Docker, WSL, VMs, and alternate accounts
+A containerized installation adds storage layers. Ollama data can live inside the container’s /root/.ollama, with persistence provided by a mounted volume or host bind mount. The host path depends on that deployment; do not assume a volume named ollama or a particular Docker storage directory exists.
+
+For each container or virtualized installation, inspect:
+
+Its .ollama data directory.
+
+Its mounted volumes and bind-mounted host directories.
+
+Its stdout/stderr logging destination.
+
+Any frontend’s separate volume.
+
+Container/VM backups, exports, and snapshots.
+
+With WSL, check Linux-side accounts and filesystems as well as Windows-side installations. These are separate inspection scopes; finding the Windows database does not rule out a second Linux history or model store.
+
+8. Frontends, browser extensions, IDEs, and API callers
+Ollama’s own files are only one part of the chain. If you used a separate chat interface, investigate that application independently.
+
+Conditional storage categories include:
+
+Client type	What to inspect
+Browser-based chat interface	Its backend chat database and uploads, plus relevant browser-profile storage.
+Browser extension	Extension-specific IndexedDB, local storage, settings, and diagnostic buffers.
+Desktop chat client	Its app-data directory, conversation databases, attachments, exports, and logs.
+IDE assistant	Extension storage, workspace data, chat history, logs, and tool-execution records.
+Python scripts, notebooks, automation	Source files, notebook outputs/checkpoints, request/response logs, caches, and saved results.
+Retrieval/document application	Source documents, extracted text, chunks, embeddings, vector stores, filenames, and retrieval logs.
+These are conditional inspection categories, not verified default paths for unnamed products.
+
+As a concrete example of why this matters, the third-party “Ollama Client” extension documents storing chat messages in SQLite persisted to IndexedDB, with embeddings, uploaded-file metadata, settings, and a bounded diagnostic buffer also stored locally. That is that extension’s behaviour—not a universal description of Ollama.
+
+9. Operating-system and infrastructure copies
+For an inspection that includes interaction metadata and recoverable remnants, the following are additional candidates. None is guaranteed to contain Ollama content; each depends on what was enabled and what occurred.
+
+Content-bearing candidates
+Terminal scrollback, session recording, and PowerShell transcripts.
+
+Shell history when prompts appeared directly in command arguments.
+
+Redirected output files, tee output, chat exports, screenshots, and screen recordings.
+
+Clipboard history or clipboard-manager databases.
+
+Editor autosave, swap, and recovery files.
+
+Process/core dumps, crash reports with memory, and diagnostic bundles.
+
+Swap/pagefiles, hibernation files, and captured memory.
+
+Backups, cloud-synced copies, filesystem snapshots, and VM snapshots.
+
+Deleted-file remnants and filesystem unallocated space.
+
+Primarily metadata candidates
+Process-execution auditing and endpoint-security records.
+
+Filesystem journals and file timestamps.
+
+Application launch and crash records.
+
+DNS, firewall, proxy, VPN, router, or network-monitoring logs.
+
+Reverse-proxy and API-gateway access logs.
+
+Authentication, remote-access, and centralized monitoring records.
+
+A prompt passed as a command-line argument can make a normally “metadata” record content-bearing. Conversely, a network connection to a model registry establishes connectivity, not the text of a conversation.
+
+These are general forensic inspection surfaces, not a claim that Ollama deliberately writes a chat archive to each one.
+
+10. Remote records — local software is not proof of exclusively local activity
+Ollama’s current documentation distinguishes local inference from cloud-hosted models. It says local prompts and responses are not seen by Ollama; for cloud models, prompts and responses are processed to provide the service. Its privacy policy also describes limited usage/device metadata, diagnostic metadata, and model-download metadata. These are vendor statements, not an independent audit.
+
+Remote locations to account for, when applicable:
+
+Ollama account/service metadata associated with cloud features or downloads.
+
+A remote Ollama server selected by the client configuration.
+
+Frontend-hosting servers.
+
+Web-search and external tool providers.
+
+Reverse proxies, tunnels, and their logging infrastructure.
+
+Cloud backups or synchronized directories.
+
+Support tickets or diagnostic uploads you submitted.
+
+Ollama documents local-only mode through OLLAMA_NO_CLOUD=1 or disable_ollama_cloud in server.json. That does not retroactively remove existing data or control independent frontends and tools.

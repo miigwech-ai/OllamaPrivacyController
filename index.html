@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html class="theme-light" data-theme="light" data-ui-theme="copper" lang="en">
+<head>
+<meta charset="utf-8"/><script src="./script/theme.js"></script>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>OllamaPrivacyController</title>
+
+<script defer="" src="./script/app.js"></script>
+<script defer="" src="./script/configuration.js"></script>
+<script defer="" src="./script/desktop_settings.js"></script>
+<script defer="" src="./script/tests.js"></script>
+<script defer="" src="./script/cleanup.js"></script>
+<script defer="" src="./script/model_cleanup.js"></script>
+<link href="./css/bulma/bulma.min.css" rel="stylesheet"/><link href="./css/themes.css" rel="stylesheet"/></head>
+<body class="opc-shell">
+<aside class="opc-sidebar">
+<div class="brand">
+      Ollama
+      <span>PrivacyController</span>
+</div>
+<p class="eyebrow">LOCAL PRIVACY WORKSPACE</p>
+<nav aria-label="Main navigation">
+<button class="active button is-fullwidth" data-page="dashboard" type="button">
+        Dashboard
+      </button>
+<button class="button is-fullwidth" data-page="cli_history" type="button">
+        CLI history
+      </button>
+<button class="button is-fullwidth" data-page="desktop_database" type="button">
+        Desktop database
+      </button>
+<button class="button is-fullwidth" data-page="logs" type="button">
+        Logs
+      </button>
+<button class="button is-fullwidth" data-page="saved_models" type="button">
+        Saved models
+      </button>
+<button class="button is-fullwidth" data-page="configuration" type="button">
+        Configuration
+      </button>
+<button class="button is-fullwidth" data-page="tests" type="button">Tests</button>
+</nav>
+<small>
+      Areas 1–4 · Manual configuration
+      <br/>
+      Cleanup implemented
+    </small>
+</aside>
+<main class="opc-main">
+<header class="opc-header">
+<div>
+<p class="eyebrow">OLLAMA PRIVACY CONTROLLER</p>
+<h1 id="title">Dashboard</h1>
+</div>
+<div class="opc-header-tools"><span class="badge" id="helper">Not checked</span><label class="theme-label" for="opc-theme-select">Theme</label><select aria-label="Interface theme" id="opc-theme-select"><option value="copper">Copper</option><option value="light">Light</option><option value="slate">Slate</option><option value="dark">Dark</option></select></div>
+</header>
+<div class="notice">
+      Live inspection with optional cleanup. Configuration changes require a
+      separate review and confirmation.
+    </div>
+<div class="toolbar">
+<button class="primary button" id="scan" type="button">
+        Check my Ollama setup
+      </button>
+<span class="muted" id="time">No scan yet</span>
+</div>
+<p aria-live="polite" id="message" role="status">
+      Ready to inspect.
+    </p>
+<!-- Dashboard -->
+<section class="page" id="dashboard">
+<div class="cards">
+<article class="box">
+<h2>Ollama connection</h2>
+<div class="value" id="connection">Not checked</div>
+</article>
+<article class="box">
+<h2>Installed version</h2>
+<div class="value" id="version">—</div>
+</article>
+<article class="box">
+<h2>Cleanup</h2>
+<div class="value">Implemented</div>
+</article>
+</div>
+<div id="overview"></div>
+<details class="box">
+<summary>Manual cleanup</summary>
+<p class="muted">
+          Plan and review exact targets before deletion. Stop Ollama before cleanup when warned.
+        </p>
+<button class="button" id="cleanup-plan" type="button">
+          Plan cleanup
+        </button>
+<p aria-live="polite" class="muted" id="cleanup-status" role="status">
+          Ready to plan cleanup.
+        </p>
+<div id="cleanup-plan-panel" hidden="">
+<h3>Cleanup Plan</h3>
+<div id="cleanup-plan-body"></div>
+</div>
+<div id="cleanup-results-panel" hidden="">
+<h3>Cleanup Results</h3>
+<div id="cleanup-results-body"></div>
+</div>
+</details>
+<details class="box">
+<summary>Model cleanup (disabled)</summary>
+<p class="muted">
+          Cleanup of saved sessions and custom models is separate from general cleanup.
+          This is disabled until plan binding and shared-blob protection are implemented.
+        </p>
+<button class="button" disabled="" id="model-cleanup-plan" type="button">
+          Plan model cleanup
+        </button>
+<p aria-live="polite" class="muted" id="model-cleanup-status" role="status">
+          Model cleanup is disabled.
+        </p>
+<div id="model-cleanup-plan-panel" hidden="">
+<h3>Model Cleanup Plan</h3>
+<div id="model-cleanup-plan-body"></div>
+</div>
+</details>
+<details class="box">
+<summary>Session activity</summary>
+<div id="activity-list">No scans yet.</div>
+</details>
+</section>
+<!-- Checker views are populated by app.js. -->
+<section class="page" hidden="" id="cli_history"></section>
+<section class="page" hidden="" id="desktop_database"></section>
+<section class="page" hidden="" id="logs"></section>
+<section class="page" hidden="" id="saved_models"></section>
+<!-- Configuration -->
+<section class="page" hidden="" id="configuration">
+<!-- Addition: current settings reported by the desktop app. -->
+<details class="box" id="current-ollama-settings">
+<summary>Current Ollama Settings</summary>
+<p class="muted">Read-only evidence from local Ollama files and the desktop settings database. Reading these values does not change settings.</p>
+<div class="toolbar">
+<button class="button" id="desktop-settings-refresh" type="button">
+            Refresh Ollama settings
+          </button>
+</div>
+<p aria-live="polite" class="muted" id="desktop-settings-status" role="status">
+          Settings have not been read yet.
+        </p>
+<div class="table-wrap">
+<table class="table is-fullwidth">
+<thead>
+<tr>
+<th>Setting</th>
+<th>Current value</th>
+<th>Source / read status</th>
+</tr>
+</thead>
+<tbody id="desktop-settings-rows"></tbody>
+</table>
+</div>
+</details>
+<!-- Existing environment configuration controls. -->
+<article class="box">
+<h2>Ollama configuration</h2>
+<p class="muted">
+          Read saved Windows environment values and stage user-level
+          changes. No models, logs or databases are modified.
+          Ollama is never stopped automatically.
+        </p>
+<div class="toolbar">
+<button class="button" id="cfg-refresh" type="button">
+            Read settings
+          </button>
+<button class="button" disabled="" id="cfg-preset" type="button">
+            Stage privacy preset
+          </button>
+<button class="primary button" disabled="" id="cfg-review" type="button">
+            Review changes
+          </button>
+<button class="button" disabled="" id="cfg-restore" type="button">
+            Review restore
+          </button>
+</div>
+<p aria-live="polite" id="cfg-status" role="status">
+          Open Configuration to read current settings.
+        </p>
+<div id="cfg-settings"></div>
+</article>
+<details class="box">
+<summary>Saved is not active — restart and scope notes</summary>
+<p class="muted">
+          Changes affect this Windows user's environment only.
+          Quit Ollama through its tray menu, then relaunch it from a
+          fresh Windows session or launcher that receives the updated
+          environment. Existing terminals may retain old values.
+          Existing CLI sessions also need to be reopened.
+          This screen does not verify the running process environment.
+        </p>
+<p class="muted">
+          The preset stages debug off, request dumps off, CLI history
+          disabled, cloud features disabled, and loopback binding.
+          Cloud disabling removes cloud functionality. Loopback binding
+          prevents LAN clients from reaching this instance. Normal INFO
+          logging is not zero logging. Desktop chat storage and
+          historical records remain untouched.
+        </p>
+<p class="muted">
+          server.json and desktop-app settings are not edited or
+          reconciled by the environment controls. Other launch sources
+          can override these saved values. No certification of
+          effective runtime behavior is claimed.
+        </p>
+</details>
+<article class="box" hidden="" id="cfg-review-panel">
+<h2 id="cfg-review-title">Review exact changes</h2>
+<div id="cfg-review-body"></div>
+<p class="muted">
+          Only the listed current-user environment entries will change.
+          This cannot remove existing interaction records.
+          No restart is performed.
+        </p>
+<label>
+<input id="cfg-consent" type="checkbox"/>
+          I approve these exact saved-setting changes.
+        </label>
+<div class="toolbar">
+<button class="primary button" disabled="" id="cfg-confirm" type="button">
+            Apply approved changes
+          </button>
+<button class="button" id="cfg-cancel" type="button">
+            Cancel
+          </button>
+</div>
+</article>
+</section>
+<section class="page" hidden="" id="tests">
+<article class="box">
+<h2>Project tests</h2>
+<p>Run either suite and review its results here. No console commands or report imports needed.</p>
+<p class="muted">These commands execute the test files in this project with your account's permissions. Run only trusted tests. The supplied suites use temporary data and mocked configuration changes.</p>
+<p aria-live="polite" id="tests-status" role="status">Ready. Choose a test suite.</p>
+</article>
+<article class="box">
+<h2>Python tests</h2>
+<p>Desktop reader and server behavior.</p>
+<button class="primary button" id="tests-python-run" type="button">Run Python tests</button>
+<div aria-live="polite" id="tests-python-result"><p class="muted">Not run in this page session.</p></div>
+</article>
+<article class="box">
+<h2>JavaScript tests</h2>
+<p>Browser-script rendering, requests, and configuration confirmation flow.</p>
+<button class="primary button" id="tests-js-run" type="button">Run JS tests</button>
+<div aria-live="polite" id="tests-js-result"><p class="muted">Not run in this page session.</p></div>
+</article>
+<details class="box"><summary>Coverage limits</summary><p class="muted">Passing tests are not a privacy certification. The initial server suite mocks the configuration engine and checkers; frontend tests simulate a browser. Results describe the code present when the suite ran.</p></details>
+</section>
+<footer>
+      Current account and configured candidates only.
+      Other contexts may remain uninspected. Areas 5–10 deferred.
+    </footer>
+</main>
+</body>
+</html>

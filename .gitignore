@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Node (dev-only test dependency)
+node_modules/
+
+# Local data / runtime artifacts
+*.sqlite
+*.sqlite3
+*.db
+*.log
+backups/
+*.tmp
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/

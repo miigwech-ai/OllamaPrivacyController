@@ -117,7 +117,8 @@ cleanup is plan-bound and stale-safe, repo is clean, tagged `v0.1.0`.
 |---|---|
 | Area 4 saved-session/model cleanup | Needs shared-blob reference analysis + plan binding |
 | VACUUM / secure-delete option | Explicit opt-in, careful testing |
-| macOS + Linux support | Code paths exist, untested |
+| macOS beta support | Implemented untested via launchctl + generated LaunchAgents; needs real-Mac validation |
+| Linux support | Deferred; systemd/service paths and privileges need a separate design |
 | Area 5 temp prompt files | Small, well-defined |
 | Scheduled cleanup | UX around safe-deletion timing |
 | Ollama version compatibility matrix | Confidence for 1.0 |
@@ -128,6 +129,6 @@ cleanup is plan-bound and stale-safe, repo is clean, tagged `v0.1.0`.
 - Never claim "privacy-first guarantee" — describe what the preset changes
 - Never claim "forensic erasure" or "complete deletion"
 - Never imply Ollama 0.40.x is patched against CVE-2026-42248
-- Never claim cross-platform support
+- Never claim verified cross-platform support (macOS remains an untested beta)
 - Reader shows 6 settings; preset writes 5 — present as two tables
 - Cleanup "server-issued, expiring plan" claim is ONLY true after A2 ships

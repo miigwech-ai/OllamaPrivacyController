@@ -137,7 +137,7 @@
 <!-- Addition: current settings reported by the desktop app. -->
 <details class="box" id="current-ollama-settings">
 <summary>Current Ollama Settings</summary>
-<p class="muted">Read-only evidence from local Ollama files and the desktop settings database. Reading these values does not change settings.</p>
+<p class="muted">Read-only evidence from local Ollama files and the settings database when present. Reading these values does not change settings.</p>
 <div class="toolbar">
 <button class="button" id="desktop-settings-refresh" type="button">
             Refresh Ollama settings
@@ -163,7 +163,7 @@
 <article class="box">
 <h2>Ollama configuration</h2>
 <p class="muted">
-          Read saved Windows environment values and stage user-level
+          Read saved user environment values and stage user-level
           changes. No models, logs or databases are modified.
           Ollama is never stopped automatically.
         </p>
@@ -189,12 +189,13 @@
 <details class="box">
 <summary>Saved is not active — restart and scope notes</summary>
 <p class="muted">
-          Changes affect this Windows user's environment only.
-          Quit Ollama through its tray menu, then relaunch it from a
-          fresh Windows session or launcher that receives the updated
-          environment. Existing terminals may retain old values.
-          Existing CLI sessions also need to be reopened.
-          This screen does not verify the running process environment.
+          Changes affect the current user's saved environment only;
+          the mechanism is the Windows registry or macOS launchd.
+          Quit Ollama, then relaunch it from a fresh session or
+          launcher that receives the updated environment. Existing
+          terminals may retain old values. Existing CLI sessions also
+          need to be reopened. This screen does not verify the running
+          process environment.
         </p>
 <p class="muted">
           The preset stages debug off, request dumps off, CLI history
@@ -216,8 +217,8 @@
 <div id="cfg-review-body"></div>
 <p class="muted">
           Only the listed current-user environment entries will change.
-          This cannot remove existing interaction records.
-          No restart is performed.
+          On macOS, login persistence is an untested beta. This cannot
+          remove existing interaction records. No restart is performed.
         </p>
 <label>
 <input id="cfg-consent" type="checkbox"/>

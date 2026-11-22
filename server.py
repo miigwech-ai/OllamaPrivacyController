@@ -1,4 +1,4 @@
-"""Local checker UI plus reviewed, reversible Windows environment configuration."""
+"""Local checker UI plus reviewed, reversible user environment configuration."""
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit

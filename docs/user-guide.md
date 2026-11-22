@@ -1,21 +1,31 @@
 # OllamaPrivacyController — User Guide
 
-A local privacy dashboard for Ollama on Windows. It shows you where your AI
-conversations live, lets you apply a reversible privacy preset, and removes
-interaction history — always with preview and confirmation.
+A local privacy dashboard for Ollama. Windows is the verified platform;
+macOS is an untested beta. It shows you where your AI conversations live,
+lets you apply a reversible privacy preset, and removes interaction history —
+always with preview and confirmation.
 
-**Requirements:** Windows 10/11, Python 3.10+, Ollama installed.
-**Verified on:** Ollama 0.40.16.
+**Requirements:** Windows 10/11 or macOS beta, Python 3.10+, Ollama installed.
+**Verified on:** Windows 10/11 with Ollama 0.40.16. macOS has synthetic tests
+only and has not been verified on a real Mac.
 
 ---
 
 ## Getting started
 
 1. Open a terminal in the project folder.
-2. Run:
+2. Run the helper for your platform:
+
+   Windows PowerShell:
 
    ```powershell
    py server_with_settings.py
+   ```
+
+   macOS Terminal:
+
+   ```bash
+   python3 server_with_settings.py
    ```
 
 3. Open `http://127.0.0.1:8765` in your browser.
@@ -85,23 +95,28 @@ Two cards:
 
 **1. Current Ollama Settings** — click **"Refresh Ollama settings"** to read
 local evidence. Shows 6 settings (Sign in, Cloud, Auto-download, Expose to
-network, Model location, Context length) plus **Ollama version** and
-**Windows auto-update risk** (CVE-2026-42248/42249 check). Read-only — changes
-nothing.
+network, Model location, Context length) plus **Ollama version** and an
+auto-update assessment. On Windows this is the CVE-2026-42248/42249 check;
+on macOS beta it is reported as not assessed. Read-only — changes nothing.
 
 **2. Ollama configuration** — the preset controls:
 
 | Button | What it does |
 |---|---|
-| **Read settings** | Loads your current saved `OLLAMA_*` values (user + machine scope) |
+| **Read settings** | Loads your current saved `OLLAMA_*` values (user scope; Windows also shows machine scope) |
 | **Stage privacy preset** | Fills in the 5 recommended values as a *proposal* — changes nothing yet |
 | **Review changes** | Shows the exact before → after for every variable |
 | **Review restore** | Previews restoration of a previously applied change set; changes nothing until confirmed |
 
 After **Review changes**, a panel shows each variable's current vs. proposed
 value. Tick **"I approve these exact saved-setting changes"** → **Apply
-approved changes**. The app verifies the write by reading the registry back,
-and keeps a backup so a later restore can undo it.
+approved changes**. The app verifies the write by reading the saved values
+back, and keeps a backup so a later restore can undo it.
+
+- **Windows:** writes the current-user registry and verifies by registry read-back.
+- **macOS beta:** writes the user launchd session with `launchctl`, verifies by
+  `launchctl getenv`, and generates Login Items agents for persistence. This is
+  untested and may not cover every Ollama install method.
 
 The preset sets:
 
@@ -113,14 +128,15 @@ The preset sets:
 | `OLLAMA_NO_CLOUD` | `true` | Cloud features off |
 | `OLLAMA_HOST` | `127.0.0.1:11434` | Loopback only — no LAN access |
 
-> **After applying:** quit Ollama (system tray → Quit) and relaunch it. The
-> app can't restart Ollama for you, and can't verify the running process
-> picked up the new values. Only *new* sessions are affected — nothing
-> historical is deleted by the preset.
+> **After applying:** quit Ollama and relaunch it. On Windows use the tray/menu
+> bar Quit option; on macOS quit the Ollama app completely. The app can't
+> restart Ollama for you, and can't verify the running process picked up the
+> new values. Only *new* sessions are affected — nothing historical is deleted
+> by the preset.
 
 ### Tests
 
-- **Run Python tests** — the backend suite (~80 tests, all synthetic data)
+- **Run Python tests** — the backend suite (~90 tests, all synthetic data)
 - **Run JS tests** — the frontend suite (~8 tests, simulated DOM)
 
 Results appear inline with expandable failure details. Only one suite runs
@@ -146,13 +162,13 @@ Nothing is modified — inspection is strictly read-only.
 2. **Read settings** → **Stage privacy preset** → **Review changes**
 3. Check the before/after table — confirm it matches what you expect
 4. Tick the consent box → **Apply approved changes**
-5. Quit Ollama from the tray and relaunch it
+5. Quit Ollama completely and relaunch it
 6. To undo later: **Review restore** → consent → apply
 
 ### "I want to delete my Ollama interaction history"
 
-**Recommended:** quit Ollama first (system tray → Quit). Deleting while it
-runs can fail on locked files — the app will tell you per-file.
+**Recommended:** quit Ollama first. Deleting while it runs can fail on locked
+files — the app will tell you per-file.
 
 1. **Dashboard** → expand **Manual cleanup**
 2. Click **Plan cleanup** — the app shows the cleanup targets, including
@@ -188,7 +204,9 @@ only; this release does not offer manual manifest/blob deletion instructions.
 | "Cleanup targets changed" (409) | A file appeared/disappeared/changed since your plan — possibly Ollama writing logs. Stop Ollama, re-plan |
 | `access_denied` on log/db targets | Ollama may be running and holding the files. Quit it and retry |
 | "Could not read" on settings rows | The Ollama desktop app may not be installed, or files are locked. Other rows still populate |
-| Page looks unstyled | Ctrl+F5; the Bulma CSS is served locally, no CDN needed |
+| macOS settings show "not assessed" | Expected in beta — no confirmed macOS updater advisory range is implemented |
+| macOS preset does not survive reboot | LaunchAgent persistence is untested; check `~/Library/LaunchAgents/com.ollamaPrivacyController.env.*.plist` and Ollama's install method |
+| Page looks unstyled | Hard-refresh; the Bulma CSS is served locally, no CDN needed |
 | `file://` warning in console | The page was opened directly — use `http://127.0.0.1:8765` instead |
 
 ---
@@ -199,7 +217,7 @@ only; this release does not offer manual manifest/blob deletion instructions.
 - **Does not cover** Docker/WSL installs, other user accounts, third-party
   chat UIs, or remote/cloud records in this release (see `docs/coverage.md`)
 - **No forensic-erasure claims** — SQLite free pages may retain deleted rows
-- **Windows 10/11 only**
+- **Windows 10/11 verified; macOS beta untested; Linux unsupported**
 - **Does not stop or restart Ollama,** or verify that its running process
   adopted the saved environment changes
 

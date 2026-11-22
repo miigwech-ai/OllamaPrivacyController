@@ -1,12 +1,14 @@
-"""Read-only Windows Ollama desktop settings evidence. No online account checks."""
+"""Read-only Ollama desktop settings evidence. No online account checks."""
 import json
 import os
 import re
 import shutil
 import sqlite3
 import subprocess
+import sys
 import urllib.request
 from pathlib import Path
+import platform_paths
 
 LABELS = ["Sign in", "Cloud", "Auto-download", "Expose Ollama to the network", "Model location", "Context length"]
 
@@ -44,11 +46,18 @@ def detect_version():
             pass
     return result
 
-def updater_finding(version_info, auto_update_value):
+def updater_finding(version_info, auto_update_value, platform=None):
     version = version_info.get("version")
-    parsed = _version_tuple(version) if version else None
+    platform = platform or sys.platform
     base = {"auto_update": auto_update_value, "cves": ["CVE-2026-42248", "CVE-2026-42249"],
-            "reference": "https://nvd.nist.gov/vuln/detail/CVE-2026-42248"}
+            "reference": "https://nvd.nist.gov/vuln/detail/CVE-2026-42248", "platform": platform}
+    if platform_paths.is_macos(platform):
+        return dict(base, status="not_assessed",
+                    message="macOS auto-update risk is not assessed in this beta; no confirmed macOS advisory range is implemented.")
+    if not platform_paths.is_windows(platform):
+        return dict(base, status="not_applicable",
+                    message="No platform-specific auto-update assessment is implemented for this OS.")
+    parsed = _version_tuple(version) if version else None
     if parsed is None:
         return dict(base, status="unknown",
                     message="Ollama version could not be determined; updater exposure is unassessed.")
@@ -60,12 +69,15 @@ def updater_finding(version_info, auto_update_value):
                 message="Ollama " + version + " is outside the confirmed-affected range (0.12.10-0.17.5); vendor fix status is unverified. Do not assume this version is patched.")
 
 def inspect():
+    platform = sys.platform
+    home = Path.home()
+    local_app_data = Path(os.environ["LOCALAPPDATA"]) if os.environ.get("LOCALAPPDATA") else None
+    directory = platform_paths.desktop_database_dir(home=home, platform=platform, local_app_data=local_app_data)
     rows = {label: dict(label=label, value=None, status="could_not_read", reason="Not read.", source=None) for label in LABELS}
     def put(label, value, source, **extra):
         rows[label].update(value=value, status="read", reason=None, source=source, **extra)
     def fail(label, reason, source=None):
         rows[label].update(reason=reason, source=source)
-    directory = Path(os.environ["LOCALAPPDATA"]) / "Ollama" if os.environ.get("LOCALAPPDATA") else None
     db = directory / "db.sqlite" if directory else None
     connection = None
     try:
@@ -148,7 +160,7 @@ def inspect():
             connection.close()
     json_value = None
     notes = []
-    config = Path.home() / ".ollama" / "server.json"
+    config = home / ".ollama" / "server.json"
     try:
         if config.is_symlink():
             raise ValueError("symbolic link not followed")
@@ -166,9 +178,9 @@ def inspect():
     except (OSError, ValueError) as exc:
         notes.append("server.json unavailable: " + type(exc).__name__)
     log_value = None
-    if directory:
+    for log_dir in platform_paths.log_directories(home=home, platform=platform, local_app_data=local_app_data):
         for name in ["server.log"] + [f"server-{i}.log" for i in range(1, 6)]:
-            path = directory / name
+            path = log_dir / name
             try:
                 if path.is_symlink():
                     continue
@@ -187,6 +199,8 @@ def inspect():
                     break
             except OSError:
                 pass
+        if log_value is not None:
+            break
     env = os.environ.get("OLLAMA_NO_CLOUD")
     if env is not None:
         notes.append("helper environment OLLAMA_NO_CLOUD = " + env + " (not proof of server environment)")
@@ -199,8 +213,8 @@ def inspect():
         fail("Cloud", "No explicit saved cloud setting or startup record found.", source)
     count = sum(r["status"] == "read" for r in rows.values())
     version_info = detect_version()
-    updater = updater_finding(version_info, rows["Auto-download"].get("value"))
-    return dict(connected=count > 0, settings=[rows[label] for label in LABELS], discovery=[],
+    updater = updater_finding(version_info, rows["Auto-download"].get("value"), platform=platform)
+    return dict(connected=count > 0, settings=[rows[label] for label in LABELS], discovery=[], platform=platform,
                 version=version_info, updater=updater,
                 error=None if count else "None of the six settings could be read.",
-                note="Read-only local evidence, not live settings or account verification. Installed-version context-default semantics are not verified.")
+                note="Read-only local evidence, not live settings or account verification. Installed-version context-default semantics are not verified." + (" macOS support is an untested beta." if platform_paths.is_macos(platform) else ""))

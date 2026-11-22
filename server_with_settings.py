@@ -1,5 +1,5 @@
 """Existing app plus desktop settings, cleanup, and fixed-command test runner.
-Run: py server_with_settings.py
+Run: py server_with_settings.py (Windows) or python3 server_with_settings.py (macOS)
 """
 from pathlib import Path
 import importlib.util
@@ -66,7 +66,7 @@ def run_tests(suite):
         with tempfile.TemporaryDirectory(prefix='opc-tests-') as temp:
             report = Path(temp) / 'results.xml'
             if suite == 'python':
-                targets = [ROOT/'tests'/'test_desktop_reader.py', ROOT/'tests'/'test_server.py', ROOT/'tests'/'test_cleanup.py']
+                targets = [ROOT/'tests'/'test_desktop_reader.py', ROOT/'tests'/'test_server.py', ROOT/'tests'/'test_cleanup.py', ROOT/'tests'/'test_macos.py']
                 if not all(p.is_file() for p in targets):
                     raise ValueError('Python test package is missing. Extract it into the project folder first.')
                 command = [sys.executable, '-m', 'pytest', *map(str, targets), '-q', '--color=no', '--junitxml='+str(report)]
@@ -84,7 +84,7 @@ def run_tests(suite):
                 env.pop(key, None)
             env['PYTEST_DISABLE_PLUGIN_AUTOLOAD'] = '1'
             with (Path(temp)/'output.txt').open('w+b') as output:
-                process = subprocess.Popen(command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT, shell=False)
+                process = subprocess.Popen(command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT, shell=False, start_new_session=os.name != 'nt')
                 timed_out = False
                 try:
                     returncode = process.wait(timeout=120)
@@ -93,6 +93,19 @@ def run_tests(suite):
                     # Terminate the runner tree on Windows; no shell or user command interpolation.
                     if os.name == 'nt':
                         subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+                    else:
+                        import signal
+                        try:
+                            os.killpg(process.pid, signal.SIGTERM)
+                        except (ProcessLookupError, PermissionError):
+                            pass
+                        try:
+                            process.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            try:
+                                os.killpg(process.pid, signal.SIGKILL)
+                            except (ProcessLookupError, PermissionError):
+                                pass
                     if process.poll() is None:
                         process.kill()
                     returncode = process.wait(timeout=10)

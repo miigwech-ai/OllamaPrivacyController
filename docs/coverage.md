@@ -2,6 +2,8 @@
 
 Source of truth: `docs/security-areas.txt`. This matrix states what v0.1 actually does — nothing more.
 
+**Platform scope:** Windows 10/11 is verified. macOS is an untested beta with synthetic tests only. Linux is unsupported. On macOS beta, configuration uses the user launchd session plus generated Login Items agents; coverage of every Ollama install method is not guaranteed.
+
 ## Areas 1–4 (local Ollama data stores)
 
 | Area | Name | Inspection | Privacy setting | Deletion | Verification | Status |

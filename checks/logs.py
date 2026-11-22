@@ -2,14 +2,15 @@ import os,re,codecs
 from pathlib import Path
 from datetime import datetime
 from .base import Check,inspect_path
+import platform_paths
 STAMP=re.compile(r'^(?:time=)?["\[]?(\d{4}-\d{2}-\d{2}[T ][0-9:.]+(?:Z|[+-]\d{2}:?\d{2})?)')
 class LogsCheck(Check):
  id='logs';title='Logs and destinations';area_number=3
  def inspect(self,c):
   r=self.result();directories=[]
   for a in c.accounts:
-   if a.platform.startswith('win') and a.local_app_data:directories.append((a.local_app_data/'Ollama',a.label))
-   elif a.platform=='darwin':directories.append((a.home/'.ollama/logs',a.label))
+   dirs=platform_paths.log_directories(a.home,a.platform,a.local_app_data)
+   if dirs:directories.extend((p,a.label) for p in dirs)
    else:r.locations.append(dict(path='system journal / unresolved logs',context=a.label,kind='logging_destination',status='not_inspected',details={}))
   directories.extend((p,'explicit') for p in c.log_directories)
   for base,label in directories:
@@ -33,8 +34,7 @@ class LogsCheck(Check):
   r=self.result();targets=[];mode_all=mode=='all'
   directories=[]
   for a in c.accounts:
-   if a.platform.startswith('win') and a.local_app_data:directories.append((a.local_app_data/'Ollama',a.label))
-   elif a.platform=='darwin':directories.append((a.home/'.ollama/logs',a.label))
+   directories.extend((p,a.label) for p in platform_paths.log_directories(a.home,a.platform,a.local_app_data))
   directories.extend((p,'explicit') for p in c.log_directories)
   for base,label in directories:
    try:

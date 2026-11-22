@@ -1,12 +1,17 @@
 import sqlite3,time,os
 from pathlib import Path
 from .base import Check,inspect_path
+import platform_paths
+
+def _database_dir(account):
+ return platform_paths.desktop_database_dir(account.home,account.platform,account.local_app_data)
+
 class DesktopDatabaseCheck(Check):
  id='desktop_database';title='Desktop database';area_number=2
  def inspect(self,c):
   r=self.result();databases=[]
   for a in c.accounts:
-   base=a.local_app_data/'Ollama' if a.platform.startswith('win') and a.local_app_data else a.home/'Library/Application Support/Ollama' if a.platform=='darwin' else None
+   base=_database_dir(a)
    if base is None:
     r.locations.append(dict(path='No resolved desktop database path',context=a.label,kind='database',status='not_inspected',details={}));continue
    items={}
@@ -35,7 +40,7 @@ class DesktopDatabaseCheck(Check):
  def plan(self,c):
   r=self.result();targets=[]
   for a in c.accounts:
-   base=a.local_app_data/'Ollama' if a.platform.startswith('win') and a.local_app_data else a.home/'Library/Application Support/Ollama' if a.platform=='darwin' else None
+   base=_database_dir(a)
    if base is None:continue
    db_path=base/'db.sqlite'
    try:

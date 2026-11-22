@@ -24,8 +24,10 @@ interaction records for Security Areas 1–3.
 
 Cleanup uses plan-binding: the server issues a 5-minute token at plan time;
 execute requires the token plus `confirmed: true`, re-plans, and refuses if
-targets changed. Configuration changes use the same pattern plus registry
-read-back verification and automatic rollback on write failure.
+targets changed. Configuration changes use the same pattern plus platform
+read-back verification (registry on Windows, `launchctl getenv` on macOS beta)
+and automatic rollback on write failure. macOS login persistence uses generated
+LaunchAgents and is untested.
 
 Checkers never follow symlinks, never copy interaction content into logs or
 responses, and report per-target outcomes instead of claiming success.

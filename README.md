@@ -1,5 +1,6 @@
-<img width="1915" height="942" alt="OllamaPrivacyApp dashboard" src="https://github.com/user-attachments/assets/ad1aa99e-2295-4328-a289-4113c957ccc6" />
-<img width="1919" height="944" alt="OllamaPrivacyApp dashboard-cleanup" src="https://github.com/user-attachments/assets/5de28ce4-815f-4169-8c6e-3bf643d210a8" />
+<img width="1919" height="946" alt="OllamaPrivacyApp-dashboard" src="https://github.com/user-attachments/assets/c7af7899-837a-4217-b5ab-82aae92ec43f" />
+<img width="1918" height="943" alt="OllamaPrivacyApp dashboard cleanup" src="https://github.com/user-attachments/assets/8c52452b-4427-4296-a744-6c09c0ccf1fd" />
+
 
 # OllamaPrivacyController
 
